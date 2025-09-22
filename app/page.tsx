@@ -1,103 +1,168 @@
+
+"use client";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import FeaturesSection from "../components/FeatureSection";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const positions = [
+    { top: "10%", left: "20%" },
+    { top: "30%", left: "70%" },
+    { top: "30%", left: "45%" },
+    { top: "50%", left: "80%" },
+    { top: "20%", left: "60%" },
+  ];
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden relative">
+      {/* Floating Icons */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+        {["🧘", "✨", "🌿", "🌞", "🌙"].map((icon, i) => (
+          <FloatingYogaIcon key={i} icon={icon} index={i} position={positions[i]} />
+        ))}
+      </div>
+
+      {/* Page Content Wrapper */}
+      <div className="max-w-[1400px] mx-auto px-6">
+        
+        {/* Hero Section */}
+        <section className="relative z-10 flex flex-col md:flex-row items-center justify-between min-h-screen py-12">
+          {/* Text */}
+          <div className="md:w-1/2 text-center md:text-left mb-12 md:mb-0">
+            <motion.h1
+              className="text-5xl md:text-6xl font-bold text-gray-800 mb-6 leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+            >
+              Transform Your{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-600">
+                Yoga Practice
+              </span>{" "}
+              with AI
+            </motion.h1>
+            <motion.p
+              className="text-xl text-gray-600 mb-8 max-w-md mx-auto md:mx-0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+            >
+              Your personal AI yoga instructor, guiding you through poses,
+              tracking your form, and helping you achieve mindfulness.
+            </motion.p>
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.4 }}
+            >
+              <button className="bg-gradient-to-r from-purple-500 to-blue-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:from-purple-600 hover:to-blue-700 transform hover:-translate-y-1">
+                Start Free Session
+              </button>
+              <button className="border-2 border-purple-500 text-purple-600 font-semibold py-3 px-8 rounded-full hover:bg-purple-50 transition-all duration-300 transform hover:-translate-y-1">
+                Learn More
+              </button>
+            </motion.div>
+          </div>
+
+          {/* Image */}
+          <div className="md:w-1/2 relative">
+            <motion.div
+              className="relative w-full max-w-lg mx-auto"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7 }}
+            >
+              <div className="absolute -inset-4 bg-gradient-to-r from-purple-400 to-blue-500 rounded-3xl blur-lg opacity-30 animate-pulse-slow"></div>
+              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div className="aspect-square relative">
+                  <Image
+                    src="/yogahero.png"
+                    alt="AI Yoga Assistant demonstrating pose"
+                    fill
+                    className="rounded-2xl object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent rounded-2xl"></div>
+                </div>
+
+                {/* AI Status */}
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full py-2 px-4 flex items-center gap-2 shadow-md">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-ping absolute"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-700">AI Active</span>
+                </div>
+
+                {/* Pose Overlay */}
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl py-2 px-4 shadow-md">
+                  <p className="text-sm text-gray-500">Current Pose</p>
+                  <p className="font-semibold text-gray-800">Downward Facing Dog</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Floating Info Circles */}
+            <motion.div
+              className="absolute -top-4 -left-4 w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center shadow-lg transform transition-transform duration-500 hover:scale-110"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: 0.6 }}
+              whileHover={{ rotate: 5 }}
+            >
+              <span className="text-center text-sm font-semibold text-amber-600">
+                Flexibility +32%
+              </span>
+            </motion.div>
+
+            <motion.div
+              className="absolute -bottom-4 -right-4 w-20 h-20 bg-green-100 rounded-full flex items-center justify-center shadow-lg transform transition-transform duration-500 hover:scale-110"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: 0.8 }}
+              whileHover={{ rotate: -5 }}
+            >
+              <span className="text-sm font-semibold text-center text-green-600">
+                Balance Improved
+              </span>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-20">
+          <FeaturesSection />
+        </section>
+
+        {/* Future Sections */}
+        <section className="py-20">
+          <h2 className="text-3xl font-bold text-center">More Coming Soon</h2>
+        </section>
+      </div>
     </div>
   );
 }
+
+// Floating Yoga Icon
+const FloatingYogaIcon = ({ icon, position }) => (
+  <motion.div
+    className="absolute text-3xl opacity-80"
+    style={position}
+    animate={{
+      y: [0, -15, 0],
+      x: [0, 5, 0],
+      rotate: [0, 5, 0],
+    }}
+    transition={{
+      duration: 6,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+    whileHover={{
+      scale: 1.5,
+      rotate: 10,
+      opacity: 2,
+      transition: { duration: 0.3 },
+    }}
+  >
+    {icon}
+  </motion.div>
+);
