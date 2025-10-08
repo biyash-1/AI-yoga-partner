@@ -13,6 +13,7 @@ import {
 } from "@clerk/nextjs";
 import SyncUserOnSignIn from "./SyncUserOnSignIn";
 
+
 const Navbar = () => {
 
     const { isSignedIn } = useUser();
@@ -38,6 +39,12 @@ const Navbar = () => {
           <li>
             <Link href="/notifications">Notifications</Link>
           </li>
+       {
+              isSignedIn &&
+           <li>
+            <Link href="/profile">profile</Link>
+          </li>
+       }
         </ul>
 
         {/* Auth Section */}

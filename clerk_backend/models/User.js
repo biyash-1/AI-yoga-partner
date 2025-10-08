@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema({
     ,createdAt:{
         type:Date,
         default:Date.now
+    },
+    profileImageUrl:{
+        type:String,
+        default:""
     }
 })
 export default mongoose.model("User",userSchema);

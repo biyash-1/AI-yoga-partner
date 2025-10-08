@@ -18,6 +18,7 @@ export const syncUser = async (req, res) => {
           clerkUser.username ??
           clerkUser.emailAddresses[0].emailAddress.split("@")[0],
         email: clerkUser.emailAddresses[0].emailAddress,
+        profileImageUrl: clerkUser.profileImageUrl || "",
       });
     }
 
