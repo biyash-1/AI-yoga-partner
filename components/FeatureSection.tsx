@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 
 const FeaturesSection = () => {
   const features = [
@@ -41,17 +41,17 @@ const FeaturesSection = () => {
     }
   ];
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 50, opacity: 0 },
     visible: { y: 0, opacity: 1, transition: { duration: 0.6, ease: "easeOut" } },
   };
 
-  const hoverVariants = {
+  const hoverVariants: Variants = {
     rest: { scale: 1, y: 0 },
     hover: { scale: 1.05, y: -10, transition: { duration: 0.3, ease: "easeInOut" } },
   };
@@ -92,17 +92,18 @@ const FeaturesSection = () => {
               key={index}
               className="relative group"
               variants={itemVariants}
-              whileHover="hover"
-              initial="rest"
-              animate="rest"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false }}
+              transition={{ duration: 1.2, delay: index * 0.1 }}
             >
               <div className={`absolute -inset-0.5 bg-gradient-to-r ${feature.color} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md`}></div>
               
               <motion.div
                 className="relative bg-white rounded-2xl p-6 h-full shadow-lg overflow-hidden"
-                variants={hoverVariants}    initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}   viewport={{ once: false }}
-          transition={{ duration: 1.2, delay: index * 0.1 }}
+                variants={hoverVariants}
+                whileHover="hover"
+                initial="rest"
               >
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center text-2xl text-white mb-6`}>
                   {feature.icon}
