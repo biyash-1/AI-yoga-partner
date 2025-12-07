@@ -1,4 +1,3 @@
-
 "use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -18,7 +17,7 @@ export default function Home() {
       {/* Floating Icons */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         {["🧘", "✨", "🌿", "🌞", "🌙"].map((icon, i) => (
-          <FloatingYogaIcon key={i} icon={icon} index={i} position={positions[i]} />
+          <FloatingYogaIcon key={i} icon={icon} position={positions[i]} />
         ))}
       </div>
 
@@ -141,8 +140,14 @@ export default function Home() {
   );
 }
 
-// Floating Yoga Icon
-const FloatingYogaIcon = ({ icon, position }) => (
+// Floating Yoga Icon - Fixed with proper TypeScript types
+const FloatingYogaIcon = ({ 
+  icon, 
+  position 
+}: { 
+  icon: string; 
+  position: { top: string; left: string } 
+}) => (
   <motion.div
     className="absolute text-3xl opacity-80"
     style={position}
