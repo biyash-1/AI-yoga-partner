@@ -14,14 +14,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden relative">
-      {/* Floating Icons */}
+   
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         {["🧘", "✨", "🌿", "🌞", "🌙"].map((icon, i) => (
           <FloatingYogaIcon key={i} icon={icon} position={positions[i]} />
         ))}
       </div>
 
-      {/* Page Content Wrapper */}
       <div className="max-w-[1400px] mx-auto px-6">
         
         {/* Hero Section */}
@@ -64,7 +63,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* Image */}
+       
           <div className="md:w-1/2 relative">
             <motion.div
               className="relative w-full max-w-lg mx-auto"
