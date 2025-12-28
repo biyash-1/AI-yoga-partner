@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import FeaturesSection from "../components/FeatureSection";
+import PricingSection from "../components/PricingSection";
 
 export default function Home() {
   const positions = [
@@ -131,9 +132,9 @@ export default function Home() {
         </section>
 
         {/* Future Sections */}
-        <section className="py-20">
-          <h2 className="text-3xl font-bold text-center">More Coming Soon</h2>
-        </section>
+    <section className="py-20">
+  <PricingSection />
+</section>
       </div>
     </div>
   );
