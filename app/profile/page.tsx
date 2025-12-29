@@ -28,13 +28,12 @@ const ProfilePage = () => {
         <div className="flex justify-center mb-6">
           <div className="w-28 h-28 rounded-full bg-blue-300 flex items-center justify-center text-white text-4xl font-bold shadow-md overflow-hidden">
             {user.imageUrl ? (
-              <Image
+              <img
                 src={user.imageUrl}
                 alt="Profile"
                 width={112}
                 height={112}
                 className="w-full h-full rounded-full object-cover"
-                priority
               />
             ) : (
               <span>{user.firstName?.[0] || user.username?.[0] || "U"}</span>
