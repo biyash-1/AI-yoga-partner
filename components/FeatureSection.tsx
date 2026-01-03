@@ -76,7 +76,7 @@ const FeaturesSection = () => {
             Powerful Features for Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-600">Yoga Journey</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover how our AI-powered platform transforms your practice with cutting-edge technology and ancient wisdom.
+            Discover how our AI-powered platform transforms your practice with cutting-edge technology and ancient wisdom
           </p>
         </motion.div>
 
