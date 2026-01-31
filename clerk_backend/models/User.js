@@ -1,4 +1,30 @@
+
 import mongoose from "mongoose";
+
+const sessionSchema = new mongoose.Schema({
+  date: {
+    type: Date,
+    default: Date.now
+  },
+  duration: {
+    type: Number, // in minutes
+    required: true
+  },
+  posesCompleted: [{
+    poseName: String,
+    duration: Number, // seconds held
+    accuracy: Number, // percentage
+    bestHold: Number // best time in seconds
+  }],
+  totalPoses: {
+    type: Number,
+    default: 0
+  },
+  averageAccuracy: {
+    type: Number,
+    default: 0
+  }
+});
 
 const userSchema = new mongoose.Schema({
   clerkId: {
@@ -38,6 +64,7 @@ const userSchema = new mongoose.Schema({
     enum: ['15-30', '30-45', '45-60'],
     default: '15-30'
   },
+  
   // Yoga stats
   stats: {
     totalSessions: {
@@ -57,6 +84,10 @@ const userSchema = new mongoose.Schema({
       default: null
     }
   },
+  
+  // NEW: Session history
+  sessions: [sessionSchema],
+  
   createdAt: {
     type: Date,
     default: Date.now
