@@ -57,7 +57,7 @@ const FeaturesSection = () => {
   };
 
   return (
-    <section className="relative py-20 overflow-hidden">
+    <section className="relative overflow-hidden">
 
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-200 rounded-full opacity-20 blur-3xl animate-pulse-slow"></div>
@@ -76,7 +76,7 @@ const FeaturesSection = () => {
             Powerful Features for Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-600">Yoga Journey</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover how our AI-powered platform transforms your practice with cutting-edge technology and ancient wisdom.
+            Discover how our AI-powered platform transforms your practice with cutting-edge technology and ancient wisdom
           </p>
         </motion.div>
 
@@ -122,18 +122,7 @@ const FeaturesSection = () => {
           ))}
         </motion.div>
 
-        <motion.div 
-          className="text-center mt-16"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-        >
-          <p className="text-lg text-gray-600 mb-6">Ready to transform your practice?</p>
-          <button className="bg-gradient-to-r from-purple-500 to-blue-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:from-purple-600 hover:to-blue-700 transform hover:-translate-y-1">
-            Start Your Free Trial
-          </button>
-        </motion.div>
+      
       </div>
     </section>
   );
