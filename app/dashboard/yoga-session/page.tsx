@@ -160,15 +160,14 @@ const YogaSession = () => {
   // Timer effect for pose duration
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (sessionStarted && isRecording && timer < currentPose.duration) {
+    if (sessionStarted && isRecording) {
+      // Keep timer running continuously, don't auto-advance poses
       interval = setInterval(() => {
         setTimer((prev) => prev + 1);
       }, 1000);
-    } else if (timer >= currentPose.duration) {
-      handleNextPose();
     }
     return () => clearInterval(interval);
-  }, [sessionStarted, isRecording, timer, currentPose.duration]);
+  }, [sessionStarted, isRecording]);
 
   // Pose time tracking
   useEffect(() => {
@@ -728,18 +727,35 @@ const YogaSession = () => {
                     </div>
 
                     {/* Timer */}
-                    <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                    <div className={`absolute top-4 right-4 backdrop-blur-md rounded-2xl p-4 border ${
+                      timer > currentPose.duration
+                        ? 'bg-yellow-900/70 border-yellow-500/30'
+                        : 'bg-black/70 border-white/20'
+                    }`}>
                       <div className="text-xs text-gray-400 mb-1">Time</div>
-                      <div className="text-3xl font-bold">{formatTime(timer)}</div>
-                      <div className="text-xs text-gray-400">/ {formatTime(currentPose.duration)}</div>
+                      <div className={`text-3xl font-bold ${
+                        timer > currentPose.duration ? 'text-yellow-400' : ''
+                      }`}>
+                        {formatTime(timer)}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        / {formatTime(currentPose.duration)}
+                        {timer > currentPose.duration && (
+                          <span className="text-yellow-400 ml-1">⏱️ Overtime</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Progress Bar */}
                     <div className="absolute bottom-0 left-0 right-0 h-2 bg-white/10">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-purple-500 to-blue-500"
+                        className={`h-full ${
+                          timer > currentPose.duration 
+                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
+                            : 'bg-gradient-to-r from-purple-500 to-blue-500'
+                        }`}
                         initial={{ width: "0%" }}
-                        animate={{ width: `${(timer / currentPose.duration) * 100}%` }}
+                        animate={{ width: `${Math.min((timer / currentPose.duration) * 100, 100)}%` }}
                         transition={{ duration: 0.3 }}
                       />
                     </div>
