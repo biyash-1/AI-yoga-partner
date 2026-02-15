@@ -7,7 +7,7 @@ const sessionSchema = new mongoose.Schema({
     default: Date.now
   },
   duration: {
-    type: Number, // in minutes
+    type: Number, 
     required: true
   },
   posesCompleted: [{

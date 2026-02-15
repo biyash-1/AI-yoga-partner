@@ -34,11 +34,9 @@ const Navbar = () => {
             <Link href="/about">About</Link>
           </li>
           <li>
-            <Link href="/meditation">Meditation</Link>
+            <Link href="/dashboard">Dashboard</Link>
           </li>
-          <li>
-            <Link href="/notifications">Notifications</Link>
-          </li>
+       
        {
               isSignedIn &&
            <li>

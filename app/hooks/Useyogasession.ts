@@ -1,4 +1,3 @@
-// hooks/useYogaSession.ts
 
 import { useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
@@ -6,13 +5,13 @@ import toast from 'react-hot-toast';
 
 interface PoseData {
   poseName: string;
-  duration: number; // seconds
-  accuracy: number; // percentage
-  bestHold: number; // seconds
+  duration: number; 
+  accuracy: number; 
+  bestHold: number; 
 }
 
 interface SessionData {
-  duration: number; // minutes
+  duration: number; 
   posesCompleted: PoseData[];
   totalPoses: number;
   averageAccuracy: number;

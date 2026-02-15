@@ -1,76 +1,72 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import * as tf from '@tensorflow/tfjs';
-import { 
-  Camera, 
-  CameraOff, 
+import {
+  CameraOff,
   Maximize2,
   Minimize2,
-  Play,
-  Pause,
-  CheckCircle,
-  ArrowLeft,
-  Info,
   AlertCircle,
-  Trophy,
   Timer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { poseImages } from "@/app/utils/pose_images";
 import { useYogaSession } from "@/app/hooks/Useyogasession";
+import YogaHeader from "@/components/yoga/YogaHeader";
+import StatsCards from "@/components/yoga/StatsCards";
+import YogaSidebar from "@/components/yoga/YogaSidebar";
+import SessionControls from "@/components/yoga/SessionControls";
 
 // Yoga poses configuration - Using exact poses from original React app
 const YOGA_POSES = [
-  { 
+  {
     id: 'Vrukshasana',
-    name: 'Tree Pose (Vrukshasana)', 
-    duration: 30, 
+    name: 'Tree Pose (Vrukshasana)',
+    duration: 30,
     instructions: 'Stand on one leg, place other foot on inner thigh, hands in prayer position',
     benefits: 'Improves balance and focus'
   },
-  { 
+  {
     id: 'Utkasana',
-    name: 'Chair Pose (Utkasana)', 
-    duration: 30, 
+    name: 'Chair Pose (Utkasana)',
+    duration: 30,
     instructions: 'Squat with arms raised overhead, back straight',
     benefits: 'Strengthens legs and core'
   },
-  { 
+  {
     id: 'Bhujangasana',
-    name: 'Cobra Pose (Bhujangasana)', 
-    duration: 25, 
+    name: 'Cobra Pose (Bhujangasana)',
+    duration: 25,
     instructions: 'Lie face down, lift chest using arms, look up',
     benefits: 'Strengthens spine and opens chest'
   },
-  { 
+  {
     id: 'Veerabhadrasana',
-    name: 'Warrior Pose (Veerabhadrasana)', 
-    duration: 35, 
+    name: 'Warrior Pose (Veerabhadrasana)',
+    duration: 35,
     instructions: 'Front knee bent at 90°, back leg straight, arms extended',
     benefits: 'Builds strength and stamina'
   },
-  { 
+  {
     id: 'Adhomukasana',
-    name: 'Downward Dog (Adhomukasana)', 
-    duration: 30, 
+    name: 'Downward Dog (Adhomukasana)',
+    duration: 30,
     instructions: 'Inverted V-shape, hands and feet on ground, hips high',
     benefits: 'Stretches entire body'
   },
-  { 
+  {
     id: 'Sarvangasana',
-    name: 'Shoulder Stand (Sarvangasana)', 
-    duration: 30, 
+    name: 'Shoulder Stand (Sarvangasana)',
+    duration: 30,
     instructions: 'Lie on back, lift legs and hips up, support with hands',
     benefits: 'Improves blood circulation'
   },
-  { 
+  {
     id: 'Trikonasana',
-    name: 'Triangle Pose (Trikonasana)', 
-    duration: 30, 
+    name: 'Triangle Pose (Trikonasana)',
+    duration: 30,
     instructions: 'Wide stance, reach down to ankle, other arm up',
     benefits: 'Stretches sides and improves flexibility'
   },
@@ -116,10 +112,11 @@ const YogaSession = () => {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // Session tracking hook
   const { saveSession, isSaving } = useYogaSession();
-  
+
   // Session data tracking
   const sessionDataRef = useRef({
     startTime: null as Date | null,
@@ -130,7 +127,7 @@ const YogaSession = () => {
       bestHold: number;
     }>
   });
-  
+
   // UI State
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -138,7 +135,13 @@ const YogaSession = () => {
   const [sessionStarted, setSessionStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
-  
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Pose Detection State
   const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
   const [timer, setTimer] = useState(0);
@@ -148,12 +151,21 @@ const YogaSession = () => {
   const [startingTime, setStartingTime] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [modelSource, setModelSource] = useState<'local' | 'cdn' | null>(null);
-  
+  const [detectedPose, setDetectedPose] = useState<string | null>(null);
+  const [isPoseCorrect, setIsPoseCorrect] = useState(true);
+
+  // Accumulators for accurate metrics per pose
+  const [poseAccuracySum, setPoseAccuracySum] = useState(0);
+  const [poseAccuracyCount, setPoseAccuracyCount] = useState(0);
+  const [accumulatedPoseTime, setAccumulatedPoseTime] = useState(0);
+  const lastActiveTimeRef = useRef<number | null>(null);
+
   // AI Models
   const detectorRef = useRef<any>(null);
   const poseClassifierRef = useRef<any>(null);
   const detectionIntervalRef = useRef<any>(null);
   const flagRef = useRef(false);
+  const hasPlayedHoldSoundRef = useRef(false);
 
   const currentPose = YOGA_POSES[currentPoseIndex];
 
@@ -175,10 +187,11 @@ const YogaSession = () => {
     if (flagRef.current) {
       setPoseTime(timeDiff);
     }
-    if (timeDiff > bestPerform) {
-      setBestPerform(timeDiff);
+    // Update best perform with accumulated time for the current pose session
+    if (poseTime > bestPerform) {
+      setBestPerform(poseTime);
     }
-  }, [currentTime, startingTime, bestPerform]);
+  }, [currentTime, startingTime, bestPerform, poseTime]);
 
   // Reset stats on pose change
   useEffect(() => {
@@ -186,6 +199,10 @@ const YogaSession = () => {
     setPoseTime(0);
     setBestPerform(0);
     setTimer(0);
+    setAccumulatedPoseTime(0);
+    setPoseAccuracySum(0);
+    setPoseAccuracyCount(0);
+    lastActiveTimeRef.current = null;
   }, [currentPoseIndex]);
 
   // Camera setup
@@ -200,15 +217,58 @@ const YogaSession = () => {
     };
   }, [isCameraOn]);
 
+  // Initialize audio on mount
+  useEffect(() => {
+    // Try to detect which file exists
+    const audio = new Audio();
+    audio.preload = "auto";
+    audioRef.current = audio;
+
+    const checkAudio = async () => {
+      const possiblePaths = ["/hold_pose.wav", "/count.wav"];
+      let foundPath = null;
+
+      for (const path of possiblePaths) {
+        try {
+          const response = await fetch(path, { method: 'HEAD' });
+          if (response.ok) {
+            foundPath = path;
+            break;
+          }
+        } catch (e) {
+          console.warn(`Error checking ${path}:`, e);
+        }
+      }
+
+      if (foundPath) {
+        console.log(`✅ Audio file found at ${foundPath}`);
+        if (audioRef.current) {
+          audioRef.current.src = foundPath;
+          audioRef.current.loop = true; // Enable looping for continuous feedback
+          audioRef.current.load();
+        }
+      } else {
+        console.warn("⚠️ No audio file found (tried /hold_pose.wav and /count.wav). Please ensure the file is in the public folder.");
+      }
+    };
+    checkAudio();
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (detectionIntervalRef.current) {
-        clearInterval(detectionIntervalRef.current);
-      }
       stopCamera();
     };
   }, []);
+
+
 
   const startCamera = async () => {
     try {
@@ -249,14 +309,14 @@ const YogaSession = () => {
     const hipsCenter = getCenterPoint(landmarks, POINTS.LEFT_HIP, POINTS.RIGHT_HIP);
     const shouldersCenter = getCenterPoint(landmarks, POINTS.LEFT_SHOULDER, POINTS.RIGHT_SHOULDER);
     const torsoSize = tf.norm(tf.sub(shouldersCenter, hipsCenter));
-    
+
     let poseCenterNew = getCenterPoint(landmarks, POINTS.LEFT_HIP, POINTS.RIGHT_HIP);
     poseCenterNew = tf.expandDims(poseCenterNew, 1);
     poseCenterNew = tf.broadcastTo(poseCenterNew, [1, 17, 2]);
-    
+
     const d = tf.gather(tf.sub(landmarks, poseCenterNew), 0, 0);
     const maxDist = tf.max(tf.norm(d, 'euclidean', 0));
-    
+
     return tf.maximum(tf.mul(torsoSize, torsoSizeMultiplier), maxDist);
   };
 
@@ -265,7 +325,7 @@ const YogaSession = () => {
     poseCenter = tf.expandDims(poseCenter, 1);
     poseCenter = tf.broadcastTo(poseCenter, [1, 17, 2]);
     landmarks = tf.sub(landmarks, poseCenter);
-    
+
     const poseSize = getPoseSize(landmarks);
     return tf.div(landmarks, poseSize);
   };
@@ -296,14 +356,14 @@ const YogaSession = () => {
     try {
       // Initialize TensorFlow backend first
       setLoadingMessage("Initializing TensorFlow...");
-      
+
       // Set backend to WebGL explicitly
       await tf.setBackend('webgl');
       await tf.ready();
-      
+
       console.log('✅ TensorFlow backend initialized:', tf.getBackend());
       console.log('✅ Available backends:', tf.engine().backendNames);
-      
+
       setLoadingMessage("Loading MoveNet detector...");
       const detectorConfig = {
         modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER
@@ -316,7 +376,7 @@ const YogaSession = () => {
       console.log('✅ MoveNet loaded');
 
       setLoadingMessage("Loading pose classifier...");
-      
+
       // Try to load your friend's custom model
       // Note: Local and CDN versions are the SAME model!
       // CDN is just a backup copy hosted online.
@@ -324,35 +384,35 @@ const YogaSession = () => {
       try {
         console.log('📁 Attempting to load model from local files...');
         console.log('Path: /model/model.json');
-        
+
         // Verify files exist
         const modelJsonResponse = await fetch('/model/model.json');
         if (!modelJsonResponse.ok) {
           throw new Error(`model.json not accessible (${modelJsonResponse.status})`);
         }
-        
+
         const binResponse = await fetch('/model/group1-shard1of1.bin');
         if (!binResponse.ok) {
           throw new Error(`model weights file not accessible (${binResponse.status})`);
         }
-        
+
         const binSize = binResponse.headers.get('content-length');
         console.log(`✅ Model files found (weights: ${binSize} bytes)`);
-        
+
         // Load the model
         poseClassifier = await tf.loadLayersModel('/model/model.json');
         console.log('✅ Successfully loaded local model!');
         console.log('📊 Model: Custom-trained yoga pose classifier');
         console.log('🎯 Classes: 7 yoga poses (Vrukshasana, Utkasana, etc.)');
         setModelSource('local');
-        
+
       } catch (localError: any) {
         console.warn('⚠️ Local model files have an issue:', localError.message);
         console.log('');
         console.log('📡 Loading backup copy from CDN...');
         console.log('ℹ️  NOTE: CDN version is the SAME model, just hosted online');
         console.log('ℹ️  Your friend uploaded this model to the CDN originally');
-        
+
         try {
           poseClassifier = await tf.loadLayersModel(
             'https://models.s3.jp-tok.cloud-object-storage.appdomain.cloud/model.json'
@@ -367,7 +427,7 @@ const YogaSession = () => {
           throw new Error(`Failed to load model from both local and CDN: ${cdnError.message}`);
         }
       }
-      
+
       poseClassifierRef.current = poseClassifier;
       console.log('Model input shape:', poseClassifier.inputs[0].shape);
       console.log('Model output shape:', poseClassifier.outputs[0].shape);
@@ -383,7 +443,7 @@ const YogaSession = () => {
     }
   };
 
-  const detectPose = async () => {
+  const detectPose = useCallback(async () => {
     if (
       !videoRef.current ||
       !canvasRef.current ||
@@ -412,7 +472,7 @@ const YogaSession = () => {
           if (keypoint.score > 0.4) {
             if (keypoint.name !== 'left_eye' && keypoint.name !== 'right_eye') {
               drawPoint(ctx, keypoint.x, keypoint.y, 6, 'rgb(255,255,255)');
-              
+
               const connections = keypointConnections[keypoint.name];
               if (connections) {
                 connections.forEach((connection) => {
@@ -442,17 +502,91 @@ const YogaSession = () => {
         const classification = poseClassifierRef.current.predict(processedInput);
 
         const data = await classification.array();
-        const classNo = CLASS_NO[currentPose.id];
-        const acc = data[0][classNo] * 100;
-        setAccuracy(Math.round(acc));
+        const predictions = data[0];
 
-        if (data[0][classNo] > 0.95) {
+        // Find which pose the model detected with highest confidence
+        const detectedPoseIndex = predictions.indexOf(Math.max(...predictions));
+        const detectedPoseConfidence = predictions[detectedPoseIndex];
+
+        // Find the name of the detected pose
+        const detectedPoseName = Object.keys(CLASS_NO).find(
+          key => CLASS_NO[key] === detectedPoseIndex
+        );
+
+        // Get the expected pose class
+        const expectedPoseIndex = CLASS_NO[currentPose.id];
+
+        // DIAGNOSTIC LOGGING - Remove after debugging
+        console.log('🔍 POSE DETECTION DEBUG:', {
+          selectedPose: currentPose.id,
+          selectedPoseIndex: expectedPoseIndex,
+          detectedPose: detectedPoseName,
+          detectedPoseIndex: detectedPoseIndex,
+          detectedConfidence: (detectedPoseConfidence * 100).toFixed(1) + '%',
+          allPredictions: Object.keys(CLASS_NO).map(poseName => ({
+            pose: poseName,
+            index: CLASS_NO[poseName],
+            confidence: (predictions[CLASS_NO[poseName]] * 100).toFixed(1) + '%'
+          })).sort((a, b) => CLASS_NO[a.pose] - CLASS_NO[b.pose])
+        });
+
+        // Check if detected pose matches expected pose
+        if (detectedPoseIndex === expectedPoseIndex) {
+          // Correct pose - show actual confidence
+          const acc = predictions[expectedPoseIndex] * 100;
+          setAccuracy(acc); // No rounding here
+          setIsPoseCorrect(true);
+          setDetectedPose(null);
+          console.log('✅ CORRECT POSE - Showing accuracy:', acc.toFixed(2) + '%');
+        } else if (detectedPoseConfidence > 0.7) {
+          // Wrong pose with high confidence
+          setAccuracy(0);
+          setIsPoseCorrect(false);
+          setDetectedPose(detectedPoseName || 'Unknown');
+          console.log('❌ WRONG POSE - Expected:', currentPose.id, 'Detected:', detectedPoseName);
+        } else {
+          // Not confident about any pose - show expected pose confidence
+          const acc = predictions[expectedPoseIndex] * 100;
+          setAccuracy(acc); // No rounding here
+          setIsPoseCorrect(true);
+          setDetectedPose(null);
+          console.log('⚠️ LOW CONFIDENCE - Showing expected pose confidence:', acc.toFixed(2) + '%');
+        }
+
+        if (predictions[expectedPoseIndex] > 0.95 && detectedPoseIndex === expectedPoseIndex) {
+          const now = Date.now();
           if (!flagRef.current) {
-            setStartingTime(Date.now());
+            setStartingTime(now);
             flagRef.current = true;
           }
-          setCurrentTime(Date.now());
-          
+          setCurrentTime(now);
+
+          // Track accumulated time and accuracy
+          if (lastActiveTimeRef.current) {
+            const delta = (now - lastActiveTimeRef.current) / 1000;
+            setAccumulatedPoseTime(prev => prev + delta);
+          }
+          lastActiveTimeRef.current = now;
+
+          const currentAcc = predictions[expectedPoseIndex] * 100;
+          setPoseAccuracySum(prev => prev + currentAcc);
+          setPoseAccuracyCount(prev => prev + 1);
+
+          // Continuous sound feedback: play while accurate, stop otherwise
+          if (audioRef.current && audioRef.current.src) {
+            if (audioRef.current.paused) {
+              console.log('🎵 Starting continuous hold sound... (Accuracy: ' + Math.round(currentAcc) + '%)');
+              audioRef.current.play()
+                .catch(e => {
+                  if (e.name === 'NotAllowedError') {
+                    console.warn("💡 Browser blocked autoplay. Please click anywhere on the page first.");
+                  } else {
+                    console.error("❌ Audio playback failed:", e.message);
+                  }
+                });
+            }
+          }
+
           // Draw green skeleton when pose is correct
           keypoints.forEach((keypoint: any) => {
             if (keypoint.score > 0.4 && keypoint.name !== 'left_eye' && keypoint.name !== 'right_eye') {
@@ -474,31 +608,48 @@ const YogaSession = () => {
           });
         } else {
           flagRef.current = false;
+          lastActiveTimeRef.current = null;
+
+          // Stop sound when accuracy drops or pose is lost
+          if (audioRef.current && !audioRef.current.paused) {
+            console.log('🔇 Stopping hold sound (Accuracy dropped)');
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
         }
       }
     } catch (err) {
       console.error('Detection error:', err);
     }
-  };
+  }, [currentPose]);
+
+  // Manage pose detection interval
+  useEffect(() => {
+    if (sessionStarted && isRecording) {
+      console.log('🔄 Starting pose detection interval for:', currentPose.id);
+      const interval = setInterval(() => {
+        detectPose();
+      }, 100);
+      return () => {
+        console.log('🧹 Clearing pose detection interval for:', currentPose.id);
+        clearInterval(interval);
+      };
+    }
+  }, [sessionStarted, isRecording, detectPose, currentPose.id]);
 
   const handleStartSession = async () => {
     if (!detectorRef.current || !poseClassifierRef.current) {
       await loadModels();
     }
-    
+
     setIsCameraOn(true);
     setSessionStarted(true);
     setIsRecording(true);
     setTimer(0);
-    
+
     // Track session start
     sessionDataRef.current.startTime = new Date();
     sessionDataRef.current.posesData = [];
-    
-    // Start pose detection loop
-    detectionIntervalRef.current = setInterval(() => {
-      detectPose();
-    }, 100);
   };
 
   const handlePauseSession = () => {
@@ -507,49 +658,59 @@ const YogaSession = () => {
 
   const handleNextPose = () => {
     // Save current pose data before moving to next
-    if (poseTime > 0) {
+    if (accumulatedPoseTime > 0) {
+      const avgPoseAccuracy = poseAccuracyCount > 0
+        ? Math.round(poseAccuracySum / poseAccuracyCount)
+        : accuracy;
+
       const poseData = {
         poseName: currentPose.name.split('(')[0].trim(),
-        duration: Math.round(poseTime), // seconds
-        accuracy: accuracy,
+        duration: Math.round(accumulatedPoseTime), // total seconds spent in pose
+        accuracy: avgPoseAccuracy,
         bestHold: Math.round(bestPerform) // seconds
       };
       sessionDataRef.current.posesData.push(poseData);
       console.log('Saved pose data:', poseData);
     }
-    
+
     const nextIndex = (currentPoseIndex + 1) % YOGA_POSES.length;
     setCurrentPoseIndex(nextIndex);
     flagRef.current = false;
+    lastActiveTimeRef.current = null;
+
+    // Reset pose detection state for new pose
+    setDetectedPose(null);
+    setIsPoseCorrect(true);
   };
 
   const handleStopSession = async () => {
     // Save last pose data if any
-    if (poseTime > 0) {
+    if (accumulatedPoseTime > 0) {
+      const avgPoseAccuracy = poseAccuracyCount > 0
+        ? Math.round(poseAccuracySum / poseAccuracyCount)
+        : accuracy;
+
       const lastPoseData = {
         poseName: currentPose.name.split('(')[0].trim(),
-        duration: Math.round(poseTime),
-        accuracy: accuracy,
+        duration: Math.round(accumulatedPoseTime),
+        accuracy: avgPoseAccuracy,
         bestHold: Math.round(bestPerform)
       };
       sessionDataRef.current.posesData.push(lastPoseData);
     }
-    
-    // Calculate session duration in minutes
-    const sessionStart = sessionDataRef.current.startTime;
-    const sessionEnd = new Date();
-    const durationMinutes = sessionStart 
-      ? Math.round((sessionEnd.getTime() - sessionStart.getTime()) / 60000)
-      : 0;
-    
-    // Calculate average accuracy
+
+    // Calculate session duration in minutes based on time spent in poses
+    const totalSecondsSpent = sessionDataRef.current.posesData.reduce((sum, p) => sum + p.duration, 0);
+    const durationMinutes = Math.max(1, Math.round(totalSecondsSpent / 60));
+
+    // Calculate average accuracy across all poses
     const avgAccuracy = sessionDataRef.current.posesData.length > 0
       ? Math.round(
-          sessionDataRef.current.posesData.reduce((sum, p) => sum + p.accuracy, 0) / 
-          sessionDataRef.current.posesData.length
-        )
+        sessionDataRef.current.posesData.reduce((sum, p) => sum + p.accuracy, 0) /
+        sessionDataRef.current.posesData.length
+      )
       : 0;
-    
+
     // Save to database
     if (sessionDataRef.current.posesData.length > 0 && durationMinutes > 0) {
       try {
@@ -558,28 +719,25 @@ const YogaSession = () => {
           poses: sessionDataRef.current.posesData.length,
           avgAccuracy
         });
-        
+
         await saveSession({
           duration: durationMinutes,
           posesCompleted: sessionDataRef.current.posesData,
           totalPoses: sessionDataRef.current.posesData.length,
           averageAccuracy: avgAccuracy
         });
-        
+
         console.log('✅ Session saved successfully!');
       } catch (error) {
         console.error('❌ Failed to save session:', error);
       }
     }
-    
+
     // Cleanup
     setSessionStarted(false);
     setIsRecording(false);
     setIsCameraOn(false);
-    if (detectionIntervalRef.current) {
-      clearInterval(detectionIntervalRef.current);
-    }
-    
+
     // Reset session data
     sessionDataRef.current = {
       startTime: null,
@@ -603,55 +761,21 @@ const YogaSession = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const setFlagCallback = (flag: boolean) => {
+    flagRef.current = flag;
+  };
+
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900 text-white">
-      {/* Header */}
-      <div className="border-b border-white/10 bg-black/30 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => router.back()}
-                className="hover:bg-white/10 text-white"
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                  AI Yoga Session
-                </h1>
-                <p className="text-gray-400 text-sm">Real-time pose detection & guidance</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 px-4 py-2 rounded-xl">
-                <div className="text-xs text-gray-400 mb-1">AI Status</div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="font-medium text-sm">
-                    {isLoading ? "Loading..." : sessionStarted ? "Active" : "Ready"}
-                  </span>
-                </div>
-              </div>
-              
-              {modelSource && (
-                <div className={`px-4 py-2 rounded-xl text-xs font-medium ${
-                  modelSource === 'local' 
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                }`}>
-                  {modelSource === 'local' 
-                    ? '🎯 Custom Model (Local)' 
-                    : '🎯 Custom Model (CDN Backup)'}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <YogaHeader
+        isLoading={isLoading}
+        sessionStarted={sessionStarted}
+        modelSource={modelSource}
+      />
 
       {isLoading && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -706,36 +830,57 @@ const YogaSession = () => {
                 {/* Overlay Stats */}
                 {isCameraOn && sessionStarted && (
                   <>
-                    {/* Accuracy Badge */}
+                    {/* Pose Time Badge */}
                     <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md rounded-2xl p-4 border border-white/20">
                       <div className="flex items-center gap-3">
-                        {accuracy >= 95 ? (
-                          <CheckCircle className="w-6 h-6 text-green-400" />
-                        ) : accuracy >= 70 ? (
-                          <AlertCircle className="w-6 h-6 text-yellow-400" />
-                        ) : (
-                          <Info className="w-6 h-6 text-blue-400" />
-                        )}
+                        <Timer className="w-6 h-6 text-purple-400" />
                         <div>
-                          <div className="text-xs text-gray-400">Accuracy</div>
-                          <div className="text-2xl font-bold">{accuracy}%</div>
+                          <div className="text-xs text-gray-400">Pose Time</div>
+                          <div className="text-2xl font-bold">{Math.round(accumulatedPoseTime)}s</div>
                         </div>
                       </div>
-                      {accuracy >= 95 && (
-                        <p className="text-xs text-green-400 mt-2">Perfect form! 🎉</p>
-                      )}
                     </div>
 
+                    {/* Accuracy Badge */}
+                    <div className="absolute top-4 left-44 bg-black/70 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-1.5 rounded-full ${accuracy >= 95 ? 'bg-green-500/20 text-green-400'
+                          : accuracy >= 70 ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                          {/* Replaced Icon logic with just color coding for cleaner code or use new icon component if needed */}
+                          {accuracy >= 95 ? "🌟" : accuracy >= 70 ? "⚠️" : "ℹ️"}
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-400">Accuracy</div>
+                          <div className="text-2xl font-bold">{accuracy.toFixed(2)}%</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Wrong Pose Warning */}
+                    {!isPoseCorrect && detectedPose && (
+                      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-900/90 backdrop-blur-md rounded-xl px-6 py-3 border border-red-500/50 max-w-xs">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-red-400" />
+                          <div>
+                            <div className="text-sm font-medium text-red-200">Wrong Pose Detected</div>
+                            <div className="text-xs text-red-300">
+                              Detected: {detectedPose}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Timer */}
-                    <div className={`absolute top-4 right-4 backdrop-blur-md rounded-2xl p-4 border ${
-                      timer > currentPose.duration
-                        ? 'bg-yellow-900/70 border-yellow-500/30'
-                        : 'bg-black/70 border-white/20'
-                    }`}>
-                      <div className="text-xs text-gray-400 mb-1">Time</div>
-                      <div className={`text-3xl font-bold ${
-                        timer > currentPose.duration ? 'text-yellow-400' : ''
+                    <div className={`absolute top-4 right-4 backdrop-blur-md rounded-2xl p-4 border ${timer > currentPose.duration
+                      ? 'bg-yellow-900/70 border-yellow-500/30'
+                      : 'bg-black/70 border-white/20'
                       }`}>
+                      <div className="text-xs text-gray-400 mb-1">Time</div>
+                      <div className={`text-3xl font-bold ${timer > currentPose.duration ? 'text-yellow-400' : ''
+                        }`}>
                         {formatTime(timer)}
                       </div>
                       <div className="text-xs text-gray-400">
@@ -749,11 +894,10 @@ const YogaSession = () => {
                     {/* Progress Bar */}
                     <div className="absolute bottom-0 left-0 right-0 h-2 bg-white/10">
                       <motion.div
-                        className={`h-full ${
-                          timer > currentPose.duration 
-                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
-                            : 'bg-gradient-to-r from-purple-500 to-blue-500'
-                        }`}
+                        className={`h-full ${timer > currentPose.duration
+                          ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                          : 'bg-gradient-to-r from-purple-500 to-blue-500'
+                          }`}
                         initial={{ width: "0%" }}
                         animate={{ width: `${Math.min((timer / currentPose.duration) * 100, 100)}%` }}
                         transition={{ duration: 0.3 }}
@@ -778,7 +922,7 @@ const YogaSession = () => {
                     >
                       <CameraOff className="w-5 h-5" />
                     </Button>
-                    
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -796,200 +940,39 @@ const YogaSession = () => {
               )}
             </motion.div>
 
-            {/* Session Controls */}
-            <div className="mt-6 flex items-center justify-center gap-4">
-              {!sessionStarted ? (
-                <Button
-                  onClick={handleStartSession}
-                  disabled={isLoading}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 px-10 py-7 text-lg rounded-full shadow-lg shadow-green-500/50 transition-all hover:scale-105"
-                >
-                  <Play className="w-6 h-6 mr-3" />
-                  Start Yoga Session
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    onClick={handlePauseSession}
-                    className="bg-white/10 hover:bg-white/20 px-8 py-6 text-lg rounded-full border border-white/20"
-                  >
-                    {isRecording ? (
-                      <>
-                        <Pause className="w-5 h-5 mr-2" />
-                        Pause
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-5 h-5 mr-2" />
-                        Resume
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    onClick={handleNextPose}
-                    className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 px-8 py-6 text-lg rounded-full shadow-lg shadow-purple-500/50"
-                  >
-                    Next Pose
-                  </Button>
+            <SessionControls
+              sessionStarted={sessionStarted}
+              isRecording={isRecording}
+              isLoading={isLoading}
+              handleStartSession={handleStartSession}
+              handlePauseSession={handlePauseSession}
+              handleNextPose={handleNextPose}
+              handleStopSession={handleStopSession}
+            />
 
-                  <Button
-                    onClick={handleStopSession}
-                    variant="outline"
-                    className="border-red-500/50 text-red-400 hover:bg-red-500/10 px-8 py-6 text-lg rounded-full"
-                  >
-                    End Session
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {/* Stats Cards */}
             {sessionStarted && (
-              <div className="mt-6 grid grid-cols-3 gap-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-br from-purple-900/40 to-purple-800/40 backdrop-blur-sm rounded-2xl p-4 border border-purple-500/30"
-                >
-                  <Timer className="w-5 h-5 text-purple-400 mb-2" />
-                  <div className="text-sm text-gray-400">Pose Time</div>
-                  <div className="text-2xl font-bold">{poseTime.toFixed(1)}s</div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-gradient-to-br from-green-900/40 to-green-800/40 backdrop-blur-sm rounded-2xl p-4 border border-green-500/30"
-                >
-                  <Trophy className="w-5 h-5 text-green-400 mb-2" />
-                  <div className="text-sm text-gray-400">Best Hold</div>
-                  <div className="text-2xl font-bold">{bestPerform.toFixed(1)}s</div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-gradient-to-br from-blue-900/40 to-blue-800/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/30"
-                >
-                  <CheckCircle className="w-5 h-5 text-blue-400 mb-2" />
-                  <div className="text-sm text-gray-400">Progress</div>
-                  <div className="text-2xl font-bold">{currentPoseIndex + 1}/{YOGA_POSES.length}</div>
-                </motion.div>
-              </div>
+              <StatsCards
+                poseTime={poseTime}
+                bestPerform={bestPerform}
+                currentPoseIndex={currentPoseIndex}
+                totalPoses={YOGA_POSES.length}
+              />
             )}
           </div>
 
-          {/* Side Panel */}
-          <div className="space-y-6">
-            {/* Current Pose Card with Image */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 backdrop-blur-sm rounded-3xl p-6 border border-white/10"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-600 rounded-xl">
-                  <Camera className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Current Pose</h2>
-                  <p className="text-gray-400 text-sm">Follow the guidance</p>
-                </div>
-              </div>
-              
-              {/* Pose Image */}
-              <div className="relative mb-6 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-white/10">
-                <div className="aspect-square relative">
-                  <img 
-                    src={poseImages[currentPose.id as keyof typeof poseImages]}
-                    alt={currentPose.name}
-                    className="w-full h-full object-contain p-4"
-                    onError={(e) => {
-                      // Fallback to a placeholder if image doesn't exist
-                      e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23a78bfa" opacity="0.2"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23ffffff" font-size="16" font-family="Arial">Pose Image</text></svg>';
-                    }}
-                  />
-                </div>
-                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full">
-                  <span className="text-xs font-medium text-purple-300">Reference</span>
-                </div>
-              </div>
-              
-              <div className="text-center mb-6">
-                <div className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                  {currentPose.name}
-                </div>
-                <div className="text-gray-400 text-sm">{formatTime(currentPose.duration)} hold time</div>
-              </div>
-              
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <Info className="w-4 h-4 text-blue-400" />
-                  <span className="font-medium text-sm">Instructions</span>
-                </div>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  {currentPose.instructions}
-                </p>
-                <div className="mt-4 pt-4 border-t border-white/10">
-                  <div className="text-xs text-gray-400 mb-1">Benefits:</div>
-                  <p className="text-sm text-purple-300">{currentPose.benefits}</p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Pose Sequence */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-gradient-to-br from-gray-900/40 to-gray-800/40 backdrop-blur-sm rounded-3xl p-6 border border-white/10"
-            >
-              <h2 className="text-xl font-bold mb-4">Today's Sequence</h2>
-              <div className="space-y-2">
-                {YOGA_POSES.map((pose, index) => (
-                  <div
-                    key={pose.id}
-                    className={`p-4 rounded-xl transition-all ${
-                      sessionStarted ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
-                    } ${
-                      index === currentPoseIndex
-                        ? "bg-gradient-to-r from-purple-600/30 to-blue-600/30 border-2 border-purple-500/50 scale-105"
-                        : "bg-white/5 hover:bg-white/10 border border-white/10"
-                    }`}
-                    onClick={() => {
-                      setCurrentPoseIndex(index);
-                      setTimer(0);
-                      flagRef.current = false;
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                          index === currentPoseIndex
-                            ? "bg-gradient-to-r from-purple-500 to-blue-600"
-                            : "bg-white/10"
-                        }`}>
-                          {index + 1}
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">{pose.name.split('(')[0].trim()}</div>
-                          <div className="text-xs text-gray-400">{formatTime(pose.duration)}</div>
-                        </div>
-                      </div>
-                      {index === currentPoseIndex && sessionStarted && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <span className="text-xs text-green-400">Active</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+          <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 backdrop-blur-sm rounded-3xl p-6 border border-white/10 h-fit">
+            <YogaSidebar
+              currentPose={currentPose}
+              formatTime={formatTime}
+              sessionStarted={sessionStarted}
+              YOGA_POSES={YOGA_POSES}
+              currentPoseIndex={currentPoseIndex}
+              setCurrentPoseIndex={setCurrentPoseIndex}
+              setTimer={setTimer}
+              setFlag={setFlagCallback}
+              setDetectedPose={setDetectedPose}
+              setIsPoseCorrect={setIsPoseCorrect}
+            />
           </div>
         </div>
       </div>
