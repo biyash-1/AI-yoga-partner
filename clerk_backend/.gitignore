@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# env files
+.env
+.env.local
+
+# next
+.next/
+out/
+
+# logs
+npm-debug.log*
+
+# backend
+clerk_backend/node_modules/
+clerk_backend/.env
