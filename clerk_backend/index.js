@@ -9,6 +9,11 @@ import {
   saveOnboarding,
   getUserStats,
 } from "./controllers/userController.js";
+import {
+  saveYogaSession,
+  getSessionHistory,
+  getSessionAnalytics
+} from "./controllers/yogacontroller.js";
 
 const app = express();
 
@@ -37,6 +42,11 @@ app.post("/api/sync-user", requireAuth(), syncUser);
 app.get("/api/check-onboarding", requireAuth(), checkOnboarding);
 app.post("/api/save-onboarding",requireAuth(), saveOnboarding);
 app.get("/api/user-stats", requireAuth(),getUserStats);
+
+
+app.post("/api/yoga/save-session", requireAuth(), saveYogaSession);
+app.get("/api/yoga/session-history", requireAuth(), getSessionHistory);
+app.get("/api/yoga/analytics", requireAuth(), getSessionAnalytics);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

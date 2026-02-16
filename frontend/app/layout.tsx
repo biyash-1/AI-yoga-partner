@@ -4,7 +4,6 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ClerkProvider } from "@clerk/nextjs";
 import {Toaster} from "react-hot-toast"
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
