@@ -1,4 +1,4 @@
-#AI yoga Partner
+# AI yoga Partner -Complete details
 
 ## Table of Contents
 1. [System Overview](#system-overview)
