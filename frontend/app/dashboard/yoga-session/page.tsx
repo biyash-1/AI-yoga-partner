@@ -321,9 +321,12 @@ const YogaSession = () => {
   };
 
   const normalizePoseLandmarks = (landmarks: any) => {
+
     let poseCenter = getCenterPoint(landmarks, POINTS.LEFT_HIP, POINTS.RIGHT_HIP);
+    //  finds the midpoint between left and right hip
     poseCenter = tf.expandDims(poseCenter, 1);
     poseCenter = tf.broadcastTo(poseCenter, [1, 17, 2]);
+    // stretches that center point to match all 17 keypoints
     landmarks = tf.sub(landmarks, poseCenter);
 
     const poseSize = getPoseSize(landmarks);
@@ -361,10 +364,9 @@ const YogaSession = () => {
       await tf.setBackend('webgl');
       await tf.ready();
 
-      console.log('✅ TensorFlow backend initialized:', tf.getBackend());
-      console.log('✅ Available backends:', tf.engine().backendNames);
 
-      setLoadingMessage("Loading MoveNet detector...");
+
+      setLoadingMessage("Loading");
       const detectorConfig = {
         modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER
       };
@@ -377,13 +379,9 @@ const YogaSession = () => {
 
       setLoadingMessage("Loading pose classifier...");
 
-      // Try to load your friend's custom model
-      // Note: Local and CDN versions are the SAME model!
-      // CDN is just a backup copy hosted online.
       let poseClassifier;
       try {
         console.log('📁 Attempting to load model from local files...');
-        console.log('Path: /model/model.json');
 
         // Verify files exist
         const modelJsonResponse = await fetch('/model/model.json');
@@ -399,7 +397,7 @@ const YogaSession = () => {
         const binSize = binResponse.headers.get('content-length');
         console.log(`✅ Model files found (weights: ${binSize} bytes)`);
 
-        // Load the model
+
         poseClassifier = await tf.loadLayersModel('/model/model.json');
         console.log('✅ Successfully loaded local model!');
         console.log('📊 Model: Custom-trained yoga pose classifier');
@@ -408,20 +406,12 @@ const YogaSession = () => {
 
       } catch (localError: any) {
         console.warn('⚠️ Local model files have an issue:', localError.message);
-        console.log('');
-        console.log('📡 Loading backup copy from CDN...');
-        console.log('ℹ️  NOTE: CDN version is the SAME model, just hosted online');
-        console.log('ℹ️  Your friend uploaded this model to the CDN originally');
 
         try {
           poseClassifier = await tf.loadLayersModel(
             'https://models.s3.jp-tok.cloud-object-storage.appdomain.cloud/model.json'
           );
-          console.log('✅ Successfully loaded model from CDN!');
-          console.log('📊 Model: Same custom-trained yoga pose classifier');
-          console.log('🎯 Classes: 7 yoga poses (Vrukshasana, Utkasana, etc.)');
-          console.log('');
-          console.log('💡 To fix local version: Copy fresh model files to public/model/');
+
           setModelSource('cdn');
         } catch (cdnError: any) {
           throw new Error(`Failed to load model from both local and CDN: ${cdnError.message}`);
@@ -429,8 +419,7 @@ const YogaSession = () => {
       }
 
       poseClassifierRef.current = poseClassifier;
-      console.log('Model input shape:', poseClassifier.inputs[0].shape);
-      console.log('Model output shape:', poseClassifier.outputs[0].shape);
+
 
       setIsLoading(false);
       setLoadingMessage("");
@@ -517,40 +506,29 @@ const YogaSession = () => {
         const expectedPoseIndex = CLASS_NO[currentPose.id];
 
         // DIAGNOSTIC LOGGING - Remove after debugging
-        console.log('🔍 POSE DETECTION DEBUG:', {
-          selectedPose: currentPose.id,
-          selectedPoseIndex: expectedPoseIndex,
-          detectedPose: detectedPoseName,
-          detectedPoseIndex: detectedPoseIndex,
-          detectedConfidence: (detectedPoseConfidence * 100).toFixed(1) + '%',
-          allPredictions: Object.keys(CLASS_NO).map(poseName => ({
-            pose: poseName,
-            index: CLASS_NO[poseName],
-            confidence: (predictions[CLASS_NO[poseName]] * 100).toFixed(1) + '%'
-          })).sort((a, b) => CLASS_NO[a.pose] - CLASS_NO[b.pose])
-        });
+
 
         // Check if detected pose matches expected pose
         if (detectedPoseIndex === expectedPoseIndex) {
           // Correct pose - show actual confidence
           const acc = predictions[expectedPoseIndex] * 100;
-          setAccuracy(acc); // No rounding here
+          setAccuracy(acc);
           setIsPoseCorrect(true);
           setDetectedPose(null);
-          console.log('✅ CORRECT POSE - Showing accuracy:', acc.toFixed(2) + '%');
+          console.log(' CORRECT POSE - Showing accuracy:', acc.toFixed(2) + '%');
         } else if (detectedPoseConfidence > 0.7) {
           // Wrong pose with high confidence
           setAccuracy(0);
           setIsPoseCorrect(false);
           setDetectedPose(detectedPoseName || 'Unknown');
-          console.log('❌ WRONG POSE - Expected:', currentPose.id, 'Detected:', detectedPoseName);
+
         } else {
           // Not confident about any pose - show expected pose confidence
           const acc = predictions[expectedPoseIndex] * 100;
           setAccuracy(acc); // No rounding here
           setIsPoseCorrect(true);
           setDetectedPose(null);
-          console.log('⚠️ LOW CONFIDENCE - Showing expected pose confidence:', acc.toFixed(2) + '%');
+          console.log(' LOW CONFIDENCE - Showing expected pose confidence:', acc.toFixed(2) + '%');
         }
 
         if (predictions[expectedPoseIndex] > 0.95 && detectedPoseIndex === expectedPoseIndex) {
@@ -579,9 +557,9 @@ const YogaSession = () => {
               audioRef.current.play()
                 .catch(e => {
                   if (e.name === 'NotAllowedError') {
-                    console.warn("💡 Browser blocked autoplay. Please click anywhere on the page first.");
+                    console.warn(" Browser blocked autoplay. Please click anywhere on the page first.");
                   } else {
-                    console.error("❌ Audio playback failed:", e.message);
+                    console.error(" Audio playback failed:", e.message);
                   }
                 });
             }
@@ -612,7 +590,7 @@ const YogaSession = () => {
 
           // Stop sound when accuracy drops or pose is lost
           if (audioRef.current && !audioRef.current.paused) {
-            console.log('🔇 Stopping hold sound (Accuracy dropped)');
+            console.log(' Stopping hold sound (Accuracy dropped)');
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
           }
@@ -626,7 +604,7 @@ const YogaSession = () => {
   // Manage pose detection interval
   useEffect(() => {
     if (sessionStarted && isRecording) {
-      console.log('🔄 Starting pose detection interval for:', currentPose.id);
+      console.log(' Starting pose detection interval for:', currentPose.id);
       const interval = setInterval(() => {
         detectPose();
       }, 100);
@@ -657,7 +635,7 @@ const YogaSession = () => {
   };
 
   const handleNextPose = () => {
-    // Save current pose data before moving to next
+
     if (accumulatedPoseTime > 0) {
       const avgPoseAccuracy = poseAccuracyCount > 0
         ? Math.round(poseAccuracySum / poseAccuracyCount)
@@ -684,7 +662,7 @@ const YogaSession = () => {
   };
 
   const handleStopSession = async () => {
-    // Save last pose data if any
+
     if (accumulatedPoseTime > 0) {
       const avgPoseAccuracy = poseAccuracyCount > 0
         ? Math.round(poseAccuracySum / poseAccuracyCount)
@@ -727,9 +705,9 @@ const YogaSession = () => {
           averageAccuracy: avgAccuracy
         });
 
-        console.log('✅ Session saved successfully!');
+        console.log(' Session saved successfully!');
       } catch (error) {
-        console.error('❌ Failed to save session:', error);
+        console.error(' Failed to save session:', error);
       }
     }
 
