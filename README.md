@@ -1,26 +1,26 @@
 # 🧘 AI Yoga Partner
 
-An intelligent yoga companion that uses **real-time AI pose detection** to guide your practice, track your progress, and help perfect your form — all running directly in your browser.
+> A full-stack AI-powered web application that provides **real-time yoga pose detection and correction** using your webcam. Built with Next.js, TensorFlow.js, and a custom-trained neural network.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
-![TensorFlow.js](https://img.shields.io/badge/TensorFlow.js-4.17-FF6F00?style=flat-square&logo=tensorflow)
-![MongoDB](https://img.shields.io/badge/MongoDB-8.x-47A248?style=flat-square&logo=mongodb)
-![Express](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express)
-![Clerk](https://img.shields.io/badge/Clerk-Auth-6C47FF?style=flat-square)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![TensorFlow.js](https://img.shields.io/badge/TensorFlow.js-4.17-orange?logo=tensorflow)
+![MongoDB](https://img.shields.io/badge/MongoDB-8.x-green?logo=mongodb)
+![Clerk](https://img.shields.io/badge/Auth-Clerk-blue?logo=clerk)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
 ## 📋 Table of Contents
 
 - [Features](#-features)
-- [System Architecture](#-system-architecture)
 - [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
 - [How It Works](#-how-it-works)
-- [AI Model Details](#-ai-model-details)
+- [Supported Poses](#-supported-poses)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
+- [AI/ML Pipeline](#-aiml-pipeline)
 - [API Endpoints](#-api-endpoints)
-- [Database Schema](#-database-schema)
 - [Screenshots](#-screenshots)
 - [Contributing](#-contributing)
 
@@ -28,156 +28,115 @@ An intelligent yoga companion that uses **real-time AI pose detection** to guide
 
 ## ✨ Features
 
-- 🎯 **Real-Time Pose Detection** — Uses MoveNet + custom neural network to classify 7 yoga poses in real-time
-- 📸 **Webcam Integration** — Live skeleton overlay drawn on your body as you practice
-- 📊 **Accuracy Tracking** — See how well you're performing each pose with live confidence scores
-- 🏆 **Session Metrics** — Track pose hold time, best hold, and overall session accuracy
-- 🔥 **Streak System** — Daily streak tracking to keep you motivated
-- 📈 **Analytics Dashboard** — Weekly progress charts, favorite pose, average accuracy
-- 🔊 **Audio Feedback** — Sound cues when you hold a pose correctly (>95% accuracy)
-- 🔐 **Authentication** — Secure sign-in/sign-up with Clerk
-- 💾 **Cloud Persistence** — All sessions saved to MongoDB for long-term tracking
-- 🌐 **Privacy-First** — All AI processing happens in your browser; no video is sent to any server
+- 🎥 **Real-time pose detection** via webcam using MoveNet Thunder
+- 🧠 **Custom-trained neural network** classifies 7 yoga poses + idle state
+- 📊 **Live accuracy feedback** with skeleton overlay (green = correct pose)
+- 🔊 **Audio cues** when pose is held correctly (>95% confidence)
+- 📈 **Dashboard with analytics** — session history, accuracy trends, streaks
+- 🔐 **Secure authentication** via Clerk (sign-up, sign-in, JWT)
+- 🗓️ **Streak tracking** — tracks consecutive practice days
+- 🎯 **Weekly goals** — with progress bar based on user preferences
+- 🌐 **All AI runs in-browser** — no images sent to server (privacy-first)
 
 ---
 
-## 🏗 System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        User's Browser                          │
-│  ┌──────────┐    ┌──────────────┐    ┌──────────────────────┐  │
-│  │  Webcam   │───▶│   MoveNet    │───▶│ Custom Classifier    │  │
-│  │  640×480  │    │  (17 joints) │    │ (Dense NN: 34→128→   │  │
-│  └──────────┘    └──────────────┘    │  64→8 classes)        │  │
-│                                      └──────────┬───────────┘  │
-│                                                 │              │
-│  ┌──────────────────────────────────────────────▼───────────┐  │
-│  │              Next.js Frontend (React)                     │  │
-│  │  • Skeleton overlay  • Accuracy display  • Session UI     │  │
-│  └──────────────────────────┬────────────────────────────────┘  │
-└─────────────────────────────┼──────────────────────────────────┘
-                              │ REST API (JWT Auth)
-┌─────────────────────────────▼──────────────────────────────────┐
-│                    Express.js Backend                           │
-│  • Save sessions  • Analytics  • User management  • Streaks   │
-└─────────────────────────────┬──────────────────────────────────┘
-                              │
-┌─────────────────────────────▼──────────────────────────────────┐
-│                      MongoDB Database                          │
-│  • Users  • Sessions  • Pose metrics  • Stats                 │
-└────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
 | Technology | Purpose |
-|-----------|---------|
-| **Next.js 15** | React framework with App Router |
+|---|---|
+| **Next.js 15** (React 19) | Framework, routing, SSR |
 | **TypeScript** | Type safety |
-| **TensorFlow.js** | Browser-based ML inference |
-| **@tensorflow-models/pose-detection** | MoveNet pose estimation |
-| **Clerk** | Authentication |
+| **TensorFlow.js** | In-browser ML inference |
+| **@tensorflow-models/pose-detection** | MoveNet Thunder (17 body keypoints) |
+| **Clerk** (`@clerk/nextjs`) | Authentication |
 | **Framer Motion** | Animations |
-| **TailwindCSS 4** | Styling |
-| **Lucide React** | Icons |
+| **Tailwind CSS v4** | Styling |
 
 ### Backend
 | Technology | Purpose |
-|-----------|---------|
+|---|---|
 | **Express.js 5** | REST API server |
-| **MongoDB + Mongoose** | Database & ODM |
-| **Clerk Express SDK** | JWT verification |
+| **MongoDB** + **Mongoose** | Database & ODM |
+| **Clerk** (`@clerk/express`) | JWT middleware |
 
-### AI / ML
+### AI/ML (Python — Training Only)
 | Technology | Purpose |
-|-----------|---------|
-| **Python + TensorFlow/Keras** | Model training |
-| **MoveNet Thunder (TFLite)** | Keypoint extraction during training |
-| **MoveNet (TF.js)** | Browser-based keypoint detection |
-| **Custom Dense NN** | Yoga pose classification |
+|---|---|
+| **TensorFlow / Keras** | Model training |
+| **MoveNet Thunder** (TFLite) | Keypoint extraction from images |
+| **Pandas, NumPy, scikit-learn** | Data processing |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                       USER'S BROWSER                         │
+│                                                              │
+│   Webcam ──▶ MoveNet (17 keypoints) ──▶ Dense NN Classifier │
+│                                              │               │
+│                                    8 pose probabilities      │
+│                                              │               │
+│   Canvas (skeleton overlay) ◀── Decision Logic               │
+│                                              │               │
+│   Session Data ──────────────────────────────┘               │
+└─────────────────────────┬────────────────────────────────────┘
+                          │ HTTP (Bearer Token)
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│              EXPRESS.JS BACKEND (Node.js)                    │
+│   Clerk Auth ──▶ Controllers ──▶ MongoDB (Mongoose)         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+> **Privacy**: All AI inference runs entirely in the browser. No images or video are ever sent to the server.
 
 ---
 
 ## 🧠 How It Works
 
-### Real-Time Pose Detection Pipeline
+### Two-Stage AI Pipeline
+
+**Stage 1 — Pose Estimation (MoveNet Thunder)**
+- Detects **17 body keypoints** from each webcam frame
+- Each keypoint: `{x, y, confidence_score}`
+- Runs at ~10 FPS in the browser via WebGL acceleration
+
+**Stage 2 — Pose Classification (Custom Dense Neural Network)**
+- Takes 17 keypoints → normalizes to 34 values (x, y only)
+- Normalization: centers at hip midpoint + scales by body size
+- Feeds into: `Dense(128, ReLU6) → Dropout(0.5) → Dense(64, ReLU6) → Dropout(0.5) → Dense(8, Softmax)`
+- Outputs **8 probabilities** (one per pose class)
+
+### Real-Time Detection Loop (every 100ms)
 
 ```
-1. CAMERA           → Captures video at 640×480 resolution
-2. MOVENET          → Detects 17 body keypoints (nose, eyes, ears,
-                      shoulders, elbows, wrists, hips, knees, ankles)
-3. NORMALIZATION    → Centers keypoints at hip midpoint, scales to
-                      constant size → 34 features (17 × 2 coordinates)
-4. CLASSIFICATION   → Custom Neural Network predicts pose probabilities
-                      → [0.02, 0.01, 0.03, 0.01, 0.02, 0.01, 0.88, 0.02]
-5. FEEDBACK         → Compares with expected pose → Shows accuracy,
-                      skeleton color, audio cues
-6. TRACKING         → Records hold time, best hold, average accuracy
-7. PERSISTENCE      → Saves session data to MongoDB on session end
+1. Capture webcam frame
+2. MoveNet detects 17 keypoints
+3. Skip if >4 keypoints are low-confidence
+4. Normalize: center at hips, scale by body size → 34 features
+5. Classifier outputs 8 probabilities
+6. Compare detected pose with expected pose
+7. If match ≥ 95%: green skeleton, play sound, track time
+8. If mismatch > 70%: show "wrong pose" warning
 ```
-
-### Supported Yoga Poses (7 + No Pose)
-
-| # | Pose | Sanskrit Name |
-|---|------|--------------|
-| 1 | 🌳 Tree Pose | Vrukshasana |
-| 2 | 🪑 Chair Pose | Utkasana |
-| 3 | 🐍 Cobra Pose | Bhujangasana |
-| 4 | ⚔️ Warrior Pose | Veerabhadrasana |
-| 5 | 🐕 Downward Dog | Adhomukasana |
-| 6 | 🤸 Shoulder Stand | Sarvangasana |
-| 7 | 📐 Triangle Pose | Trikonasana |
 
 ---
 
-## 🤖 AI Model Details
+## 🧘 Supported Poses
 
-### Model Architecture
-
-```
-Input (34 features: 17 keypoints × 2 coordinates)
-    │
-    ▼
-Dense Layer (128 neurons, ReLU6 activation)
-    │
-    ▼
-Dropout (50%)
-    │
-    ▼
-Dense Layer (64 neurons, ReLU6 activation)
-    │
-    ▼
-Dropout (50%)
-    │
-    ▼
-Output Layer (8 neurons, Softmax activation)
-    → Probabilities for each yoga pose class
-```
-
-### Training Details
-
-| Parameter | Value |
-|-----------|-------|
-| Input Shape | (34,) — normalized (x, y) coordinates |
-| Output Classes | 8 (7 poses + no_pose) |
-| Optimizer | Adam |
-| Loss Function | Categorical Cross-Entropy |
-| Max Epochs | 200 |
-| Batch Size | 16 |
-| Early Stopping | Patience: 20 epochs |
-| Regularization | Dropout (0.5) |
-
-### Data Preprocessing Pipeline
-
-```
-Training Images → MoveNet Thunder → 17 Keypoints (x, y, score)
-     → CSV Files → Normalization (center + scale) → 34 Features
-     → Train/Test Split → Model Training → Export to TF.js
-```
+| # | Pose | Sanskrit Name | Description |
+|---|------|---------------|-------------|
+| 1 | 🌳 Tree Pose | Vrukshasana | Stand on one leg, arms in prayer |
+| 2 | 🪑 Chair Pose | Utkasana | Squat with arms overhead |
+| 3 | 🐍 Cobra Pose | Bhujangasana | Lie face down, lift chest |
+| 4 | ⚔️ Warrior Pose | Veerabhadrasana | Front knee bent, arms extended |
+| 5 | 🐕 Downward Dog | Adhomukasana | Inverted V-shape |
+| 6 | 🤸 Shoulder Stand | Sarvangasana | Legs and hips lifted |
+| 7 | 📐 Triangle Pose | Trikonasana | Wide stance, reach to ankle |
+| 8 | 🚫 No Pose | — | Idle / not performing any pose |
 
 ---
 
@@ -186,58 +145,43 @@ Training Images → MoveNet Thunder → 17 Keypoints (x, y, score)
 ```
 AI-yoga-partner/
 │
-├── AI/                              # ML Training Module
+├── AI/                                  # ML Training Pipeline (Python)
 │   └── classification model/
-│       ├── data.py                  # BodyPart enum (17 keypoints)
-│       ├── movenet.py               # MoveNet TFLite wrapper
-│       ├── proprocessing.py         # Image → Keypoint → CSV pipeline
-│       ├── training.py              # Neural network training
-│       ├── convert_model.py         # Keras → TensorFlow.js converter
-│       ├── class_names.json         # ["chair","cobra","dog",...]
-│       ├── yoga_poses/              # Training/test images
-│       └── csv_per_pose/            # Extracted keypoint CSVs
+│       ├── yoga_poses/train/            # Training images (8 pose folders)
+│       ├── yoga_poses/test/             # Test images
+│       ├── proprocessing.py             # MoveNet → keypoints → CSV
+│       ├── data.py                      # BodyPart enum & data types
+│       ├── movenet.py                   # MoveNet TFLite wrapper
+│       ├── training.py                  # Train Dense NN classifier
+│       ├── convert_model.py             # Export to TF.js format
+│       ├── movenet_thunder.tflite       # Pre-trained MoveNet model
+│       ├── train_data.csv / test_data.csv
+│       └── class_names.json             # 8 class labels
 │
-├── frontend/                        # Next.js Frontend
+├── frontend/                            # Next.js Frontend
 │   ├── app/
-│   │   ├── page.tsx                 # Landing page
-│   │   ├── layout.tsx               # Root layout
-│   │   ├── globals.css              # Global styles
+│   │   ├── page.tsx                     # Landing page
+│   │   ├── layout.tsx                   # Root layout + ClerkProvider
+│   │   ├── middleware.ts                # Auth route protection
 │   │   ├── dashboard/
-│   │   │   ├── page.tsx             # Dashboard (stats + analytics)
-│   │   │   ├── yoga-session/
-│   │   │   │   └── page.tsx         # ⭐ Core: Real-time yoga session
-│   │   │   └── progress/
-│   │   │       └── page.tsx         # Progress tracking
-│   │   ├── hooks/
-│   │   │   ├── usePoseDetection.ts  # Pose detection hook
-│   │   │   └── Useyogasession.ts    # Session persistence hook
-│   │   └── utils/
-│   │       └── pose_images.ts       # Pose image mappings
-│   ├── components/
-│   │   ├── yoga/
-│   │   │   ├── YogaHeader.tsx       # Session header component
-│   │   │   ├── StatsCards.tsx       # Pose time/best hold/progress
-│   │   │   ├── YogaSidebar.tsx      # Pose guide + sequence list
-│   │   │   └── SessionControls.tsx  # Start/pause/next/stop buttons
-│   │   ├── Navbar.tsx
-│   │   ├── FeatureSection.tsx
-│   │   └── SyncUserOnSignIn.tsx     # Clerk → MongoDB user sync
-│   ├── public/
-│   │   ├── model/                   # TF.js model files
-│   │   │   ├── model.json
-│   │   │   └── group1-shard1of1.bin
-│   │   └── poses/                   # Reference pose images
-│   └── middleware.ts                # Clerk route protection
+│   │   │   ├── page.tsx                 # Dashboard (stats, analytics)
+│   │   │   ├── progress/page.tsx        # Progress tracking
+│   │   │   └── yoga-session/page.tsx    # ★ Real-time yoga session
+│   │   ├── hooks/Useyogasession.ts      # API hook for session CRUD
+│   │   ├── onboarding/page.tsx          # First-time user setup
+│   │   └── about/page.tsx
+│   ├── components/yoga/                 # Yoga session UI components
+│   ├── public/model/                    # TF.js model (model.json + .bin)
+│   └── package.json
 │
-└── clerk_backend/                   # Express.js Backend
-    ├── index.js                     # Server entry + route definitions
+└── clerk_backend/                       # Express.js Backend
+    ├── index.js                         # Server entry + routes
     ├── controllers/
-    │   ├── userController.js        # User sync, onboarding, stats
-    │   └── yogacontroller.js        # Session save, history, analytics
-    ├── models/
-    │   └── User.js                  # Mongoose schema
-    └── services/
-        └── yogaPoseService.js       # Server-side pose service
+    │   ├── userController.js            # User sync, onboarding, stats
+    │   └── yogacontroller.js            # Session save, history, analytics
+    ├── models/User.js                   # Mongoose schema
+    ├── services/yogaPoseService.js      # Optional server-side pose service
+    └── package.json
 ```
 
 ---
@@ -246,15 +190,15 @@ AI-yoga-partner/
 
 ### Prerequisites
 
-- **Node.js** v18+ 
-- **Python** 3.8+ (only for AI model training)
-- **MongoDB** (local or Atlas)
-- **Clerk Account** ([clerk.com](https://clerk.com))
+- **Node.js** v18+
+- **Python** 3.8+ (only for model training)
+- **MongoDB** instance (local or Atlas)
+- **Clerk** account (free at [clerk.com](https://clerk.com))
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/AI-yoga-partner.git
+git clone https://github.com/YOUR_USERNAME/AI-yoga-partner.git
 cd AI-yoga-partner
 ```
 
@@ -265,16 +209,19 @@ cd clerk_backend
 npm install
 ```
 
-Create a `.env` file:
+Create `.env` file:
 ```env
-MONGOURI=mongodb+srv://<username>:<password>@cluster.mongodb.net/yoga-app
+MONGOURI=mongodb+srv://<username>:<password>@cluster.mongodb.net/yoga_app
 PORT=5000
-CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
+CLERK_SECRET_KEY=sk_test_...
+CLERK_PUBLISHABLE_KEY=pk_test_...
 ```
 
-Start the backend:
+Start the server:
 ```bash
 node index.js
+# or with nodemon:
+npx nodemon index.js
 ```
 
 ### 3. Setup Frontend
@@ -284,134 +231,150 @@ cd frontend
 npm install
 ```
 
-Create a `.env.local` file:
+Create `.env.local` file:
 ```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_key
-CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 ```
 
-Start the development server:
+Start the dev server:
 ```bash
 npm run dev
 ```
 
-### 4. Open the App
+Visit [http://localhost:3000](http://localhost:3000) 🎉
 
-Navigate to `http://localhost:3000` in your browser.
-
-### 5. (Optional) Train the AI Model
+### 4. (Optional) Retrain the AI Model
 
 ```bash
 cd AI/classification\ model
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 
 # Step 1: Extract keypoints from images
 python proprocessing.py
 
-# Step 2: Train the model
+# Step 2: Train the classifier
 python training.py
 
-# Step 3: Convert to TensorFlow.js format
-tensorflowjs_converter --input_format=keras saved_model ../frontend/public/model
+# Step 3: Convert for TF.js
+tensorflowjs_converter --input_format=keras_saved_model saved_model model
+# Then copy model.json + .bin files to frontend/public/model/
 ```
+
+---
+
+## 🤖 AI/ML Pipeline
+
+### Training Flow
+
+```
+Images → MoveNet (keypoints) → CSV → Normalize → Dense NN → Saved Model → TF.js
+```
+
+### Model Architecture
+
+```
+Input(34) → Dense(128, ReLU6) → Dropout(0.5) → Dense(64, ReLU6) → Dropout(0.5) → Dense(8, Softmax)
+```
+
+| Parameter | Value |
+|---|---|
+| Input features | 34 (17 keypoints × 2 coordinates) |
+| Hidden layers | 2 (128 and 64 neurons) |
+| Activation | ReLU6 |
+| Regularization | Dropout 50% |
+| Output | 8 classes (Softmax probabilities) |
+| Loss function | Categorical Cross-Entropy |
+| Optimizer | Adam |
+| Training epochs | 200 (early stopping, patience=20) |
+| Model size | ~74 KB |
+
+### Normalization Details
+
+1. **Translation**: Center all keypoints at the midpoint of left and right hip → position-invariant
+2. **Scaling**: Divide by `max(torso_size × 2.5, max_keypoint_distance)` → scale-invariant
 
 ---
 
 ## 📡 API Endpoints
 
-### User Management
-| Method | Endpoint | Description |
-|--------|---------|-------------|
-| `POST` | `/api/sync-user` | Sync Clerk user to MongoDB |
-| `GET` | `/api/check-onboarding` | Check onboarding status |
-| `POST` | `/api/save-onboarding` | Save user preferences |
-| `GET` | `/api/user-stats` | Get user statistics |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/api/sync-user` | Sync user from Clerk to MongoDB | ✅ |
+| `GET` | `/api/check-onboarding` | Check onboarding status | ✅ |
+| `POST` | `/api/save-onboarding` | Save goals & preferences | ✅ |
+| `GET` | `/api/user-stats` | Get stats (streak, minutes, etc.) | ✅ |
+| `POST` | `/api/yoga/save-session` | Save completed session | ✅ |
+| `GET` | `/api/yoga/session-history` | Get recent sessions | ✅ |
+| `GET` | `/api/yoga/analytics` | Get analytics & insights | ✅ |
 
-### Yoga Sessions
-| Method | Endpoint | Description |
-|--------|---------|-------------|
-| `POST` | `/api/yoga/save-session` | Save a completed session |
-| `GET` | `/api/yoga/session-history` | Get session history |
-| `GET` | `/api/yoga/analytics` | Get analytics & insights |
+### Example: Save Session Payload
 
-> All endpoints require a valid Clerk JWT token in the `Authorization` header.
-
----
-
-## 🗄 Database Schema
-
-### User Document
-
-```javascript
+```json
 {
-  clerkId: String,              // Unique Clerk authentication ID
-  username: String,
-  email: String,
-  profileImageUrl: String,
-  onboardingCompleted: Boolean,
-  goals: [String],              // ['flexibility', 'strength', ...]
-  experience: String,           // 'beginner' | 'intermediate' | 'advanced'
-  timePerDay: String,           // '15-30' | '30-45' | '45-60'
-  stats: {
-    totalSessions: Number,
-    totalMinutes: Number,
-    currentStreak: Number,
-    lastSessionDate: Date
-  },
-  sessions: [{
-    date: Date,
-    duration: Number,           // in minutes
-    posesCompleted: [{
-      poseName: String,
-      duration: Number,         // seconds held
-      accuracy: Number,         // percentage (0-100)
-      bestHold: Number          // best hold in seconds
-    }],
-    totalPoses: Number,
-    averageAccuracy: Number
-  }]
+  "duration": 5,
+  "totalPoses": 3,
+  "averageAccuracy": 87,
+  "posesCompleted": [
+    {
+      "poseName": "Tree Pose",
+      "duration": 45,
+      "accuracy": 92,
+      "bestHold": 18
+    }
+  ]
 }
 ```
 
 ---
 
-## 🖼 Screenshots
+## 🔐 Authentication
 
-> *Add screenshots of your application here*
-> 
-> - Landing Page
-> - Dashboard with Stats
-> - Yoga Session with AI Detection
-> - Pose Accuracy Feedback
+- **Clerk** handles user sign-up, sign-in, and session management
+- Frontend: `@clerk/nextjs` with middleware protecting `/dashboard/*` routes
+- Backend: `@clerk/express` with `requireAuth()` middleware verifying JWT tokens
+- Tokens are passed as `Authorization: Bearer <token>` headers
+
+---
+
+## 📸 Screenshots
+
+> _Add your application screenshots here_
+
+| Landing Page | Dashboard | Yoga Session |
+|---|---|---|
+| _screenshot_ | _screenshot_ | _screenshot_ |
 
 ---
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-This project is built for educational purposes.
+This project is licensed under the MIT License.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- [TensorFlow.js](https://www.tensorflow.org/js) — Browser-based ML
-- [MoveNet](https://www.tensorflow.org/hub/tutorials/movenet) — Pose estimation model by Google
+- [TensorFlow.js](https://www.tensorflow.org/js) — In-browser ML inference
+- [MoveNet](https://www.tensorflow.org/hub/tutorials/movenet) — Google's pose estimation model
 - [Clerk](https://clerk.com) — Authentication platform
 - [Next.js](https://nextjs.org) — React framework
-- [MongoDB](https://www.mongodb.com) — Database
+- Yoga pose dataset contributors
 
 ---
 
 <p align="center">
-  Built with ❤️ using AI & Modern Web Technologies
+  Made with ❤️ for a healthier world 🧘
 </p>

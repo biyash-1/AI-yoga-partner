@@ -3,6 +3,8 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import FeaturesSection from "../components/FeatureSection";
 import PricingSection from "../components/PricingSection";
+import TestimonialsSection from "@/components/TestonomialSection";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   const positions = [
@@ -135,12 +137,19 @@ export default function Home() {
     <section className="py-20">
   <PricingSection />
 </section>
+    <section className="py-20">
+<TestimonialsSection/>
+</section>
+
+    <section className="">
+<Footer/>
+</section>
       </div>
     </div>
   );
 }
 
-// Floating Yoga Icon - Fixed with proper TypeScript types
+
 const FloatingYogaIcon = ({ 
   icon, 
   position 
