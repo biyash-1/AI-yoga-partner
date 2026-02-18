@@ -45,16 +45,7 @@ const YogaHeader = ({ isLoading, sessionStarted, modelSource }: YogaHeaderProps)
               </div>
             </div>
 
-            {modelSource && (
-              <div className={`px-4 py-2 rounded-xl text-xs font-medium ${modelSource === 'local'
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                }`}>
-                {modelSource === 'local'
-                  ? '🎯 Custom Model (Local)'
-                  : '🎯 Custom Model (CDN Backup)'}
-              </div>
-            )}
+          
           </div>
         </div>
       </div>
